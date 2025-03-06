@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Respond to Alert</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0-alpha1/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Respond to Accident Alert</h2>
+        <p>Respond to the accident alert by selecting an option below:</p>
+
+        <!-- Response Buttons -->
+        <button id="accept-btn" class="btn btn-success">Accept</button>
+        <button id="reject-btn" class="btn btn-danger">Reject</button>
+
+        <!-- Display Message -->
+        <div id="responseMessage" class="mt-3"></div>
+    </div>
+
+    <script>
+        // Connect to the Socket.IO server
+        const socket = io();
+
+        // Role of the responder (e.g., ambulance, police, hospital)
+        const responderRole = "Hospital"; // Replace with dynamic role if needed
+
+        // Handle "Accept" button click
+        $('#accept-btn').click(function () {
+            sendResponse('accept');
+        });
+
+        // Handle "Reject" button click
+        $('#reject-btn').click(function () {
+            sendResponse('reject');
+        });
+
+        // Function to send response
+        function sendResponse(response) {
+            $.ajax({
+                type: 'POST',
+                url: '/respond',
+                data: {
+                    responder_role: responderRole,
+                    response: response
+                },
+                success: function (data) {
+                    $('#responseMessage').html(`<div class="alert alert-success">${data.message}</div>`);
+                    if (response === 'accept') {
+                        // Disable buttons after acceptance
+                        $('#accept-btn, #reject-btn').prop('disabled', true);
+                        setTimeout(function() {
+                            window.location.href = '/';  // Redirect to login page
+                        }, 3000);
+                    }
+                },
+                error: function (error) {
+                    $('#responseMessage').html(`<div class="alert alert-danger">${error.responseJSON.message}</div>`);
+                }
+            });
+        }
+
+        // Listen for real-time updates
+        socket.on('response_update', function (data) {
+            $('#responseMessage').html(`<div class="alert alert-info">${data.responder} has responded: ${data.response}</div>`);
+        });
+    </script>
+</body>
+</html>
